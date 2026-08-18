@@ -7,18 +7,15 @@ This is private API.
 __all__ = [
     "parse_saveat",
     "parse_to_t_y",
-    "cond_reverse",
 ]
 
 from dataclasses import replace
 
-from jaxtyping import Array, ArrayLike, Bool
-from typing import Any, TypeAlias, TypeVar, cast
+from jaxtyping import ArrayLike
+from typing import Any, TypeAlias
 
 import diffrax as dfx
 import equinox as eqx
-import jax
-import optype as op
 from plum import convert, dispatch
 
 import coordinax.frames as cxf
@@ -27,8 +24,8 @@ import quaxed.numpy as jnp
 import unxt as u
 from unxt.quantity import AllowValue
 
-import galax._custom_types as gt
 import galax.coordinates as gc
+import galax.dynamics.custom_types as gt
 from . import custom_types as gdt
 from galax.potential._src.utils import coord_dispatcher, speed_of_light
 
@@ -537,20 +534,3 @@ def parse_to_t_y(
 
 
 #####################################################################
-
-
-T = TypeVar("T")
-T_co = TypeVar("T_co", covariant=True)
-
-
-def _identity(x: T) -> T:
-    return x
-
-
-def _reverse(x: op.CanGetitem[Any, T]) -> T:
-    return x[::-1]
-
-
-def cond_reverse(pred: Bool[Array, ""], x: T) -> T:
-    """Reverse `x` if `pred` is True."""
-    return cast(T, jax.lax.cond(pred, _reverse, _identity, x))

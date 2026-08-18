@@ -3,7 +3,6 @@
 from abc import ABCMeta, abstractmethod
 
 from jaxtyping import PRNGKeyArray
-from typing import Generic, TypeVar
 
 import jax.random as jr
 import optype as op
@@ -13,10 +12,8 @@ import coordinax as cx
 import quaxed.numpy as jnp
 import unxt as u
 
-import galax._custom_types as gt
 import galax.coordinates as gc
-
-CT = TypeVar("CT", bound=gc.AbstractPhaseSpaceObject)
+import galax.coordinates.custom_types as gt
 
 
 def getkeys(
@@ -28,7 +25,7 @@ def getkeys(
     return newkey, iter(subkeys)
 
 
-class AbstractPhaseSpaceObject_Test(Generic[CT], metaclass=ABCMeta):
+class AbstractPhaseSpaceObject_Test[CT: gc.AbstractPhaseSpaceObject](metaclass=ABCMeta):
     """Abstract base class for testing `galax.coordinates.AbstractPhaseSpaceObject`."""
 
     #################################################################

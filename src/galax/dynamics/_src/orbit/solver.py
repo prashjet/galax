@@ -11,8 +11,7 @@ import functools as ft
 from dataclasses import KW_ONLY
 
 from jaxtyping import PyTree
-from typing import Any, TypeAlias, final
-from typing_extensions import override
+from typing import Any, TypeAlias, final, override
 
 import diffrax as dfx
 import equinox as eqx
@@ -26,14 +25,14 @@ import quaxed.numpy as jnp
 import unxt as u
 from unxt.quantity import AllowValue
 
-import galax._custom_types as gt
 import galax.coordinates as gc
 import galax.dynamics._src.custom_types as gdt
+import galax.dynamics.custom_types as gt
 from .field_base import AbstractOrbitField
+from galax.dynamics import loop_strategies as lstrat
 from galax.dynamics._src.solver import AbstractSolver, SolveState, Terms
 from galax.dynamics._src.utils import parse_saveat, parse_to_t_y
 from galax.dynamics.fields import AbstractField
-from galax.utils import loop_strategies as lstrat
 
 BBtQParr: TypeAlias = tuple[gdt.BBtQarr, gdt.BBtParr]
 

@@ -16,7 +16,7 @@ import jax
 import quaxed.numpy as jnp
 import unxt as u
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from galax.potential._src.base_single import AbstractSinglePotential
 from galax.potential._src.params.base import AbstractParameter
 from galax.potential._src.params.field import ParameterField
@@ -41,7 +41,7 @@ class JaffePotential(AbstractSinglePotential):
             "m_tot": self.m_tot(t, ustrip=self.units["mass"]),
             "r_s": self.r_s(t, ustrip=self.units["length"]),
         }
-        return potential(params, r)
+        return potential(params, r)  # type: ignore[no-any-return]
 
 
 # ===================================================================
@@ -56,4 +56,5 @@ def potential(p: gt.Params, r: gt.Sz0, /) -> gt.FloatSz0:
     $$
 
     """
-    return -p["G"] * p["m_tot"] / p["r_s"] * jnp.log(1 + p["r_s"] / r)
+    _result = -p["G"] * p["m_tot"] / p["r_s"] * jnp.log(1 + p["r_s"] / r)
+    return _result  # type: ignore[no-any-return]

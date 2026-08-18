@@ -17,8 +17,8 @@ from typing import (
     get_args,
     get_type_hints,
     overload,
+    override,
 )
-from typing_extensions import override
 
 from astropy.units import PhysicalType as Dimension, Quantity as AstropyQuantity
 
@@ -31,7 +31,7 @@ from unxt.quantity import AbstractQuantity
 from .base import AbstractParameter, ParameterCallable
 from .constant import ConstantParameter
 from .core import CustomParameter
-from galax.utils.dataclasses import Sentinel, sentineled
+from galax.potential.dataclasses import Sentinel, sentineled
 
 if TYPE_CHECKING:
     from galax.potential import AbstractPotential

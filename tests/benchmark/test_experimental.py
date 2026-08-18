@@ -2,7 +2,6 @@
 
 from collections.abc import Callable
 from typing import Any, TypeAlias, TypedDict
-from typing_extensions import Unpack
 
 import jax
 import jax.random as jr
@@ -16,7 +15,7 @@ import unxt as u
 import galax.coordinates as gc
 import galax.dynamics as gd
 import galax.potential as gp
-from galax.utils import loop_strategies
+from galax.dynamics import loop_strategies
 
 # =============================================================================
 # Tools for crafting a benchmark suite
@@ -56,9 +55,7 @@ class ParameterizationKWArgs(TypedDict):
 
 def process_pytest_paramatrization(
     process_fn: ProcessFn,
-    arg_id_values: list[
-        tuple[Func, str | None, JITOpts, Unpack[tuple[Arguments, ...]]]
-    ],
+    arg_id_values: list[tuple[Func, str | None, JITOpts, *tuple[Arguments, ...]]],
 ) -> ParameterizationKWArgs:
     """Process the argvalues."""
     # Get the ID for each parameterization
@@ -105,7 +102,7 @@ stream_ics = stream_simulator.init(
 static_argnums = {"static_argnums": (0,)}
 static_argnames = {"static_argnames": ("solver", "solver_kwargs", "dense")}
 
-funcs_id_and_args: list[tuple[Func, ID, JITOpts, Unpack[tuple[Arguments, ...]]]] = [
+funcs_id_and_args: list[tuple[Func, ID, JITOpts, *tuple[Arguments, ...]]] = [
     # ================================================
     # Orbit integration
     (
@@ -214,7 +211,7 @@ funcs_id_and_args: list[tuple[Func, ID, JITOpts, Unpack[tuple[Arguments, ...]]]]
     ("func", "argobj"),
     **process_pytest_paramatrization(process_func, funcs_id_and_args),
 )
-@pytest.mark.benchmark(group="quaxed", max_time=1.0, warmup=False)
+@pytest.mark.benchmark(group="quaxed", max_time=1.0)
 def test_jit_compile(func, argobj):
     """Test the speed of jitting a function."""
     _ = func.lower(*argobj.args, **argobj.kwargs).compile()
@@ -227,7 +224,6 @@ def test_jit_compile(func, argobj):
 @pytest.mark.benchmark(
     group="galax.dynamics",
     max_time=1.0,  # NOTE: max_time is ignored
-    warmup=True,
 )
 def test_execute(func, argobj):
     """Test the speed of calling the function."""

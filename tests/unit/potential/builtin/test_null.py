@@ -1,6 +1,5 @@
 from jaxtyping import Array
-from typing import Any
-from typing_extensions import override
+from typing import Any, override
 
 import pytest
 
@@ -8,8 +7,8 @@ import quaxed.numpy as jnp
 import unxt as u
 import unxt.unitsystems as usx
 
-import galax._custom_types as gt
 import galax.potential as gp
+import galax.potential.custom_types as gt
 from ..test_core import AbstractSinglePotential_Test
 
 

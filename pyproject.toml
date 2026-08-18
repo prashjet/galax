@@ -4,7 +4,7 @@ description = "Galactic Dynamics in Jax."
 dynamic = ["version"]
 license = { text = "MIT License" }
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [
   { name = "galax maintainers", email = "nstarman@users.noreply.github.com" },
   { name = "Adrian Price-Whelan", email = "adrianmpw@gmail.com" },
@@ -20,7 +20,6 @@ classifiers = [
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -29,8 +28,8 @@ classifiers = [
 ]
 dependencies = [
   "astropy>=7.0.0",
-  "beartype>=0.22.9",                         # TODO: figure out why 0.22.0 breaks things
-  "coordinax>=0.23.3",
+  "beartype>=0.22.9",                      # TODO: figure out why 0.22.0 breaks things
+  "coordinax>=0.23.3,<0.24",
   "dataclassish>=0.8.0",
   "diffrax>=0.7",
   "diffraxtra>=1.5.2",
@@ -43,17 +42,16 @@ dependencies = [
   "oncequinox>=0.1.0",
   "optimistix>=0.0.11",
   "optional-dependencies>=0.4.0",
-  "optype>=0.13.0; python_version < '3.12'",
-  "optype>=0.14.0; python_version >= '3.12'",
+  "optype>=0.14.0",
   "packaging>=24.1",
   "plotting_backends>=0.1",
   "plum>=2.8.0; python_version < '3.14'",
   "plum>=2.9.0; python_version >= '3.14'",
-  "quax>=0.3.2",
+  "quax>=0.4.3",
   "quaxed>=0.10.5",
   "tfp-nightly[jax]>=0.25.0",
   "typing-extensions>=4.13.2",
-  "unxt>=1.11.2",
+  "unxt>=1.11.2,<2",
   "wadler_lindig>=0.1.7",
   "xmmutablemap>=0.2.1",
   "zeroth>=1.2.0",
@@ -80,6 +78,25 @@ plot-matplotlib = ["matplotlib>=3.8"]
 Changelog = "https://github.com/GalacticDynamics/galax/releases"
 Discussions = "https://github.com/GalacticDynamics/galax/discussions"
 Homepage = "https://github.com/GalacticDynamics/galax"
+
+# Interoperability plugins. Each portion loads its own group at the end of its
+# `__init__`; importing a registered module performs its `plum` dispatch
+# registration. Groups are per-portion so that importing `galax.coordinates`
+# does not drag in potential-level interop. A plugin whose third-party target
+# is not installed is skipped by the loader.
+[project.entry-points."galax.coordinates.interop"]
+astropy = "galax.interop.astropy.coordinates"
+gala = "galax.interop.gala.coordinates"
+
+[project.entry-points."galax.potential.interop"]
+astropy = "galax.interop.astropy.potential"
+gala = "galax.interop.gala.potential"
+galpy = "galax.interop.galpy.potential"
+matplotlib = "galax.interop.matplotlib.potential"
+
+[project.entry-points."galax.dynamics.interop"]
+astropy = "galax.interop.astropy.dynamics"
+matplotlib = "galax.interop.matplotlib.orbit"
 
 
 [build-system]
@@ -121,9 +138,15 @@ test-mpl = ["pytest-mpl>=0.17.0"]
 
 
 [tool.hatch]
-build.hooks.vcs.version-file = "src/galax/_version.py"
 metadata.allow-direct-references = true
 version.source = "vcs"
+
+# `src/galax` is a PEP 420 namespace directory with no `__init__.py`, so the
+# package cannot be auto-detected and must be named explicitly. There is no
+# version-file hook: a namespace directory must not hold a module owned by one
+# distribution, so `galax.__version__` no longer exists. Use
+# `importlib.metadata.version("galax")`.
+build.targets.wheel.packages = ["src/galax"]
 
 
 [tool.codespell]
@@ -146,12 +169,20 @@ report.exclude_also = [
   '@abc.abstractmethod',
   '@abstractmethod',
 ]
-run.omit = ["*/utils/_boundinstance.py"]
+run.omit = ["*/_boundinstance/*"]
 run.source = ["galax"]
 
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
+
+# `src/galax` is a PEP 420 namespace directory. Without an explicit package
+# base, mypy derives a module name by walking up to the first directory
+# without `__init__.py`, naming this module `potential._src.base` rather than
+# `galax.potential._src.base` and losing every cross-module type.
+explicit_package_bases = true
+mypy_path = "src"
+namespace_packages = true
 
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
@@ -171,6 +202,17 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 [[tool.mypy.overrides]]
 disable_error_code = ["name-defined"] # <- jaxtyping
 module = "galax.*"
+
+[[tool.mypy.overrides]]
+# `dataclassish.converters.field`'s `**kwargs: DataclassFieldKwargsNotMetadata`
+# is missing `Unpack[...]`, so mypy checks each kwarg against the TypedDict
+# itself instead of unpacking it. Only bites on py>=3.12, where
+# `DataclassFieldKwargsNotMetadata` is a real TypedDict (it's `Any` below 3.12).
+disable_error_code = ["arg-type"]
+module = [
+  "galax.dynamics._src.experimental.df",
+  "galax.potential._src.params.field",
+]
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
@@ -209,7 +251,7 @@ messages_control.disable = [
   "wrong-import-order",            # handled by ruff
   "wrong-import-position",
 ]
-py-version = "3.11"
+py-version = "3.12"
 reports.output-format = "colorized"
 similarities.ignore-imports = "yes"
 
@@ -217,10 +259,18 @@ similarities.ignore-imports = "yes"
 [tool.pytest.ini_options]
 addopts = [
   "--arraydiff",
+  # `src/galax` and `src/galax/interop` are namespace directories. Under the
+  # default "prepend" mode pytest derives a module name by walking up to the
+  # first directory without an `__init__.py` and puts that directory on
+  # sys.path -- which makes the leaf of a namespace package shadow a real
+  # library. Matches `coordinax` and `unxt`. NB: deliberately *not*
+  # `consider_namespace_packages`, which renames test modules and breaks
+  # pytest-mpl's hash lookups.
+  "--import-mode=importlib",
   "--showlocals",
   "--strict-config",
   "--strict-markers",
-  "-p no:doctest",    # using sybil
+  "-p no:doctest",           # using sybil
   "-ra",
 ]
 filterwarnings = [
@@ -275,6 +325,7 @@ ignore = [
   "TD002", # Missing author in TODO
   "TD003", # Missing issue link on the line following this TODO
   "UP037", # Remove quote from type annotation  <- jaxtyping
+  "UP040", # Use `type` instead of `TypeAlias`  <- plum/beartype can't resolve PEP 695 `type` statements
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -284,6 +335,16 @@ ignore = [
   "A001",   # Variable `copyright` is shadowing a Python builtin
   "INP001", # implicit namespace package
 ]
+# `galax` and `galax.interop` are PEP 420 namespace directories, so any
+# loose module in them is correctly "part of an implicit namespace
+# package". That is the intent, not a mistake.
+"src/galax/interop/*.py" = ["INP001"]
+# Each interop portion is named after the library it wraps, so e.g.
+# `galax.interop.astropy.coordinates` importing `astropy.coordinates` looks
+# like a self-import. It isn't: these are absolute imports resolving to the
+# third-party package. Safe because `--import-mode=importlib` keeps
+# `src/galax/interop` off sys.path, so the portion never shadows the library.
+"src/galax/interop/*/*.py" = ["PLW0406"]
 "notebooks/**" = ["ANN", "D103", "FBT", "T201"]
 "noxfile.py" = ["ERA001", "T20"]
 "tests/**" = [
@@ -303,7 +364,12 @@ ignore = [
   "TID252", # Relative imports from parent modules are banned
 ]
 
+[tool.ruff.lint.flake8-import-conventions]
+# `from astropy.coordinates import X` is banned; import the module as `apyc`.
+banned-from = ["astropy.coordinates"]
+
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"astropy.coordinates" = "apyc"
 "coordinax" = "cx"
 "diffrax" = "dfx"
 "diffraxtra" = "dfxtra"
@@ -321,6 +387,10 @@ exempt-modules = []
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
+# The interop portions are named after the libraries they wrap, so without this
+# isort infers e.g. `astropy` is first-party inside `src/galax/interop/astropy`
+# and hoists it into galax's own import block.
+known-third-party = ["astropy", "gala", "galpy", "matplotlib"]
 known-first-party = [
   "coordinax",
   "dataclassish",

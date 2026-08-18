@@ -17,9 +17,9 @@ import quaxed.numpy as jnp
 from unxt.quantity import AbstractQuantity, BareQuantity as FastQ
 from xmmutablemap import ImmutableMap
 
-import galax._custom_types as gt
 import galax.coordinates as gc
 import galax.dynamics._src.custom_types as gdt
+import galax.dynamics.custom_types as gt
 from .interp_psp import InterpolatedPhaseSpaceCoordinate
 from galax.dynamics._src.orbit import OrbitSolver, PhaseSpaceInterpolation
 from galax.dynamics.fields import AbstractOrbitField
@@ -40,7 +40,7 @@ default_stepsize_controller = dfx.PIDController(rtol=1e-7, atol=1e-7)
 
 
 @final
-class Integrator(eqx.Module):  # type: ignore[misc]
+class Integrator(eqx.Module):
     """Integrator using :func:`diffrax.diffeqsolve`.
 
     This integrator uses the :func:`diffrax.diffeqsolve` function to integrate

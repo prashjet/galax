@@ -5,8 +5,7 @@ __all__ = ["PhaseSpacePosition", "ComponentShapeTuple"]
 import warnings
 from dataclasses import KW_ONLY, replace
 
-from typing import Any, ClassVar, NamedTuple
-from typing_extensions import override
+from typing import Any, ClassVar, NamedTuple, override
 
 import equinox as eqx
 from plum import dispatch
@@ -16,11 +15,11 @@ import quaxed.numpy as jnp
 import unxt as u
 from dataclassish.converters import Unless
 
-import galax._custom_types as gt
+import galax.coordinates.custom_types as gt
 from galax.coordinates._src.base import AbstractPhaseSpaceObject
 from galax.coordinates._src.frames import SimulationFrame, simulation_frame
+from galax.coordinates._src.shape import vector_batched_shape
 from galax.coordinates._src.utils import PSPVConvertOptions
-from galax.utils._shape import vector_batched_shape
 
 
 class ComponentShapeTuple(NamedTuple):

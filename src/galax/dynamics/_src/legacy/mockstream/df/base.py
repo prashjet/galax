@@ -15,8 +15,8 @@ from plum import convert
 import coordinax as cx
 import unxt as u
 
-import galax._custom_types as gt
 import galax.coordinates as gc
+import galax.dynamics.custom_types as gt
 import galax.potential as gp
 from .progenitor import ConstantMassProtenitor, ProgenitorMassCallable
 from galax.dynamics._src.mockstream.arm import MockStreamArm
@@ -25,7 +25,7 @@ from galax.dynamics._src.orbit import Orbit
 Carry: TypeAlias = tuple[gt.QuSz3, gt.QuSz3, gt.QuSz3, gt.QuSz3]
 
 
-class AbstractStreamDF(eqx.Module):  # type: ignore[misc]
+class AbstractStreamDF(eqx.Module):
     """Abstract base class of Stream Distribution Functions."""
 
     @ft.partial(jax.jit)

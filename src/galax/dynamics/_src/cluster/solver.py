@@ -5,8 +5,7 @@ __all__ = ["MassSolver"]
 from dataclasses import KW_ONLY
 
 from jaxtyping import PyTree
-from typing import Any
-from typing_extensions import override
+from typing import Any, override
 
 import diffrax as dfx
 import equinox as eqx
@@ -16,7 +15,7 @@ from plum import dispatch
 import unxt as u
 from unxt.quantity import AllowValue
 
-import galax._custom_types as gt
+import galax.dynamics.custom_types as gt
 from .dmdt import (
     AbstractMassRateField,
     CustomMassRateField,
@@ -183,7 +182,7 @@ default_saveat = dfx.SaveAt(t1=True)
 
 
 @MassSolver.solve.dispatch  # type: ignore[misc,union-attr]
-@eqx.filter_jit  # type: ignore[misc]
+@eqx.filter_jit
 def solve(
     self: MassSolver,
     field: AbstractMassRateField | MassVectorField,

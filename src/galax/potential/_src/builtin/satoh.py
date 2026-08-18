@@ -17,7 +17,7 @@ import quaxed.numpy as jnp
 import unxt as u
 from unxt.quantity import AllowValue
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from galax.potential._src.base_single import AbstractSinglePotential
 from galax.potential._src.params.base import AbstractParameter
 from galax.potential._src.params.field import ParameterField
@@ -54,7 +54,7 @@ class SatohPotential(AbstractSinglePotential):
             "a": self.a(t, ustrip=self.units["length"]),
             "b": self.b(t, ustrip=self.units["length"]),
         }
-        return potential(params, xyz)
+        return potential(params, xyz)  # type: ignore[no-any-return]
 
 
 # ===================================================================
@@ -66,4 +66,4 @@ def potential(p: gt.Params, xyz: gt.Sz3, /) -> gt.Sz0:
     R2 = xyz[..., 0] ** 2 + xyz[..., 1] ** 2
     z = xyz[..., 2]
     term = R2 + z**2 + p["a"] * (p["a"] + 2 * jnp.sqrt(z**2 + p["b"] ** 2))
-    return -p["G"] * p["m_tot"] / jnp.sqrt(term)
+    return -p["G"] * p["m_tot"] / jnp.sqrt(term)  # type: ignore[no-any-return]

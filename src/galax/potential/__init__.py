@@ -27,6 +27,9 @@ __all__ = [
     "MultipoleInnerPotential",
     "MultipoleOuterPotential",
     "MultipolePotential",
+    "AxisymmetricGaussianPotential",
+    "GaussianPotential",
+    "TriaxialGaussianPotential",
     "LeeSutoTriaxialNFWPotential",
     "NFWPotential",
     "TriaxialNFWPotential",
@@ -69,7 +72,7 @@ __all__ = [
     "d2potential_dr2",
 ]
 
-from galax.setup_package import install_import_hook
+from .setup_package import install_import_hook, load_interop_plugins
 
 with install_import_hook("galax.potential"):
     from . import io, params, plot
@@ -94,8 +97,10 @@ with install_import_hook("galax.potential"):
     from ._src.base_single import AbstractSinglePotential
     from ._src.builtin import (
         AbstractMultipolePotential,
+        AxisymmetricGaussianPotential,
         BovyMWPotential2014,
         BurkertPotential,
+        GaussianPotential,
         HardCutoffNFWPotential,
         HarmonicOscillatorPotential,
         HenonHeilesPotential,
@@ -124,6 +129,7 @@ with install_import_hook("galax.potential"):
         PowerLawCutoffPotential,
         SatohPotential,
         StoneOstriker15Potential,
+        TriaxialGaussianPotential,
         TriaxialHernquistPotential,
         TriaxialNFWPotential,
         Vogelsberger08TriaxialNFWPotential,
@@ -145,3 +151,10 @@ with install_import_hook("galax.potential"):
 
 # Cleanup
 del install_import_hook, register_funcs
+
+# Interoperability with third-party libraries. Importing a registered module is
+# what performs its `plum` dispatch registration; entry points let separately
+# installed distributions extend `galax.potential` without it knowing they exist.
+load_interop_plugins("galax.potential.interop")
+
+del load_interop_plugins

@@ -17,12 +17,12 @@ from plum import dispatch
 import unxt as u
 from unxt.quantity import AllowValue
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from .base import AbstractTransformedPotential
-from galax.dynamics._src.utils import cond_reverse
 from galax.potential._src.base import AbstractPotential
 from galax.potential._src.params.base import AbstractParameter
 from galax.potential._src.params.field import ParameterField
+from galax.potential._src.utils import cond_reverse
 
 
 @final

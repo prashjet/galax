@@ -1,13 +1,12 @@
-from typing import Any, ClassVar
-from typing_extensions import override
+from typing import Any, ClassVar, override
 
 import pytest
 
 import quaxed.numpy as jnp
 import unxt as u
 
-import galax._custom_types as gt
 import galax.potential as gp
+import galax.potential.custom_types as gt
 import galax.potential.params as gpp
 from ..param.test_field import ParameterFieldMixin
 from ..test_core import AbstractSinglePotential_Test

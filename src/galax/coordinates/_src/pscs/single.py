@@ -5,8 +5,7 @@ __all__ = ["PhaseSpaceCoordinate"]
 import functools as ft
 from dataclasses import KW_ONLY
 
-from typing import Any, ClassVar, final
-from typing_extensions import override
+from typing import Any, ClassVar, final, override
 
 import equinox as eqx
 from plum import dispatch
@@ -16,13 +15,13 @@ import quaxed.numpy as jnp
 import unxt as u
 from dataclassish.converters import Unless
 
-import galax._custom_types as gt
+import galax.coordinates.custom_types as gt
 from .base import AbstractPhaseSpaceCoordinate, ComponentShapeTuple
 from .base_composite import AbstractCompositePhaseSpaceCoordinate
 from .base_single import AbstractBasicPhaseSpaceCoordinate
 from galax.coordinates._src.base import AbstractPhaseSpaceObject
 from galax.coordinates._src.frames import SimulationFrame, simulation_frame
-from galax.utils._shape import batched_shape, vector_batched_shape
+from galax.coordinates._src.shape import batched_shape, vector_batched_shape
 
 
 @final

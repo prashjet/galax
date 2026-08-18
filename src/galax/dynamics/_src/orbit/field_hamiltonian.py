@@ -11,8 +11,8 @@ import jax
 
 import unxt as u
 
-import galax._custom_types as gt
 import galax.dynamics._src.custom_types as gdt
+import galax.dynamics.custom_types as gt
 import galax.potential as gp
 from .field_base import AbstractOrbitField
 from galax.dynamics._src.utils import parse_to_t_y
@@ -229,7 +229,7 @@ class HamiltonianField(AbstractOrbitField):
     #: Potential.
     potential: gp.AbstractPotential
 
-    @property
+    @property  # type: ignore[misc]
     def units(self) -> u.AbstractUnitSystem:
         return self.potential.units
 
@@ -237,15 +237,16 @@ class HamiltonianField(AbstractOrbitField):
     # Symplectic integration terms
     # TODO: enable full gamut of inputs
 
-    @jax.jit  # type: ignore[misc]
+    @jax.jit
     def dx_dt(self, t: Any, v_xyz: gdt.BBtParr, args: Any, /) -> gdt.BBtParr:  # noqa: ARG002
         """Call with time, position quantity arrays."""
         return v_xyz
 
-    @jax.jit  # type: ignore[misc]
+    @jax.jit
     def dv_dt(self, t: gt.BBtSz0, xyz: gdt.BBtQarr, _: Any, /) -> gdt.BtAarr:
         """Call with time, velocity quantity arrays."""
-        return -self.potential._gradient(xyz, t)  # noqa: SLF001
+        grad = self.potential._gradient(xyz, t)  # noqa: SLF001
+        return -grad  # type: ignore[no-any-return]
 
 
 # ===============================================

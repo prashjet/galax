@@ -19,7 +19,7 @@ import quaxed.scipy.special as jsp
 import unxt as u
 from xmmutablemap import ImmutableMap
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from galax.potential._src.base import default_constants
 from galax.potential._src.base_single import AbstractSinglePotential
 from galax.potential._src.params.base import AbstractParameter
@@ -29,7 +29,7 @@ from galax.potential._src.utils import r_spherical
 
 @ft.partial(jax.jit)
 def _safe_gamma_inc(a: gt.SzN, x: gt.SzN) -> gt.SzN:
-    return jsp.gammainc(a, x) * jsp.gamma(a)
+    return jsp.gammainc(a, x) * jsp.gamma(a)  # type: ignore[no-any-return]
 
 
 @final
@@ -79,7 +79,7 @@ class PowerLawCutoffPotential(AbstractSinglePotential):
             "alpha": self.alpha(t, ustrip=self.units["dimensionless"]),
             "r_c": self.r_c(t, ustrip=ul),
         }
-        return potential(params, r)
+        return potential(params, r)  # type: ignore[no-any-return]
 
 
 # ===================================================================
@@ -114,4 +114,4 @@ def potential(p: gt.Params, r: gt.Sz0, /) -> gt.FloatSz0:
         lambda: 0.0,
     )
 
-    return term1 + term2 - phi_infinity
+    return term1 + term2 - phi_infinity  # type: ignore[no-any-return]

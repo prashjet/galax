@@ -1,17 +1,16 @@
-from typing import Any
-from typing_extensions import override
+from typing import Any, override
 
 import pytest
 
 import quaxed.numpy as jnp
 import unxt as u
 
-import galax._custom_types as gt
 import galax.potential as gp
+import galax.potential.custom_types as gt
 from ..param.test_field import ParameterFieldMixin
 from ..test_core import AbstractSinglePotential_Test
 from .test_common import ParameterMMixin, ParameterRSMixin
-from galax._interop.optional_deps import OptDeps
+from galax.interop.optional_deps import OptDeps
 
 
 class ShapeA1ParameterMixin(ParameterFieldMixin):

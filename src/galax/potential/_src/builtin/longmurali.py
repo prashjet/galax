@@ -17,7 +17,7 @@ import quaxed.numpy as jnp
 import unxt as u
 from unxt.quantity import AllowValue
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from galax.potential._src.base_single import AbstractSinglePotential
 from galax.potential._src.params.base import AbstractParameter
 from galax.potential._src.params.field import ParameterField
@@ -64,7 +64,7 @@ class LongMuraliBarPotential(AbstractSinglePotential):
             "c": self.c(t, ustrip=ul),
             "alpha": self.alpha(t, ustrip=self.units["angle"]),
         }
-        return potential(params, xyz)
+        return potential(params, xyz)  # type: ignore[no-any-return]
 
 
 # ===================================================================
@@ -85,4 +85,5 @@ def potential(p: gt.Params, xyz: gt.Sz3, /) -> gt.Sz0:
     T_minus = jnp.sqrt((a - xp) ** 2 + yz2)
 
     GM_R = p["G"] * p["m_tot"] / (2.0 * a)
-    return GM_R * jnp.log((xp - a + T_minus) / (xp + a + T_plus))
+    _result = GM_R * jnp.log((xp - a + T_minus) / (xp + a + T_plus))
+    return _result  # type: ignore[no-any-return]

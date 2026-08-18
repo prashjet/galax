@@ -7,43 +7,22 @@ __all__ = [
 import functools as ft
 from dataclasses import KW_ONLY
 
-from collections.abc import Callable
 from jaxtyping import Array, Float, Shaped
 from typing import final
 
 import equinox as eqx
 import jax
-import numpy as np
 
 import quaxed.numpy as jnp
 import unxt as u
 from xmmutablemap import ImmutableMap
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from galax.potential._src.base import default_constants
 from galax.potential._src.base_single import AbstractSinglePotential
 from galax.potential._src.params.base import AbstractParameter
 from galax.potential._src.params.field import ParameterField
-
-
-class GaussLegendreIntegrator(eqx.Module):  # type: ignore[misc]
-    """Gauss-Legendre quadrature integrator."""
-
-    x: Shaped[Array, "O"]
-    w: Shaped[Array, "O"]
-
-    @ft.partial(jax.jit, static_argnums=(1,))
-    def __call__(
-        self,
-        f: Callable[
-            [Shaped[Array, "N *#batch"]],
-            Shaped[Array, "N *batch"] | Shaped[u.Quantity["dimensionless"], "N *batch"],
-        ],
-        /,
-    ) -> Shaped[Array, "*batch"] | Shaped[u.Quantity["dimensionless"], "*batch"]:
-        y = f(self.x)
-        w = self.w.reshape(self.w.shape + (1,) * (y.ndim - 1))
-        return jnp.sum(y * w, axis=0)
+from galax.potential._src.utils import GaussLegendreIntegrator
 
 
 @final
@@ -95,13 +74,8 @@ class TriaxialNFWPotential(AbstractSinglePotential):
     _integrator: GaussLegendreIntegrator = eqx.field(default=None)
 
     def __post_init__(self) -> None:
-        # Gauss-Legendre quadrature
-        x_, w_ = np.polynomial.legendre.leggauss(self.integration_order)
-        x, w = jnp.asarray(x_, dtype=float), jnp.asarray(w_, dtype=float)
-        # Interval change from [-1, 1] to [0, 1]
-        x = 0.5 * (x + 1)
-        w = 0.5 * w
-        object.__setattr__(self, "_integrator", GaussLegendreIntegrator(x, w))
+        integrator = GaussLegendreIntegrator.for_order(self.integration_order)
+        object.__setattr__(self, "_integrator", integrator)
 
     # ==========================================================================
 
@@ -227,13 +201,13 @@ class TriaxialNFWPotential(AbstractSinglePotential):
         def integrand(s: Float[Array, "N"]) -> Float[Array, "N *batch"]:
             s2 = s.reshape(s.shape + (1,) * batchdims) ** 2
             denom = jnp.sqrt(((q1sq - 1) * s2 + 1) * ((q2sq - 1) * s2 + 1))
-            return delta_psi_factor(s2) / denom
+            return delta_psi_factor(s2) / denom  # type: ignore[no-any-return]
 
         # TODO: option to do integrate.quad
         integral = self._integrator(integrand)
 
         out = (-2.0 * jnp.pi * self.constants["G"] * rho0 * r_s**2 * q1 * q2) * integral
-        return out.ustrip(self.units["specific energy"])
+        return out.ustrip(self.units["specific energy"])  # type: ignore[no-any-return]
 
     # ==========================================================================
 
@@ -253,4 +227,4 @@ class TriaxialNFWPotential(AbstractSinglePotential):
         xi = jnp.sqrt(self._ellipsoid_surface(xyz[None], q1sq, q2sq, s2)[0]) / r_s
 
         dens = rho0 / xi / (1.0 + xi) ** 2
-        return dens.ustrip(self.units["mass density"])
+        return dens.ustrip(self.units["mass density"])  # type: ignore[no-any-return]

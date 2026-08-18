@@ -7,8 +7,7 @@ This is private API.
 __all__ = ["AbstractOrbitField"]
 
 from jaxtyping import Array, PyTree
-from typing import Any
-from typing_extensions import override
+from typing import Any, override
 
 from plum import dispatch
 
@@ -28,7 +27,9 @@ class AbstractOrbitField(AbstractField):
 
     @override  # specify the signature of the `__call__` method.
     @dispatch.abstract
-    def __call__(self, *_: Any, **kw: Any) -> tuple[Any, Any]:
+    def __call__(  # type: ignore[override]
+        self, *_: Any, **kw: Any
+    ) -> tuple[Any, Any]:
         raise NotImplementedError  # pragma: no cover
 
     @override

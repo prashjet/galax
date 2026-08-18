@@ -15,12 +15,12 @@ import unxt as u
 from unxt.quantity import AllowValue
 from xmmutablemap import ImmutableMap
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from galax.potential._src.base import default_constants
 from galax.potential._src.base_single import AbstractSinglePotential
 from galax.potential._src.params.base import AbstractParameter
 from galax.potential._src.params.field import ParameterField
-from galax.potential._src.utils import r_spherical
+from galax.potential._src.utils import r_spherical, safe_sqrt
 
 
 @final
@@ -51,7 +51,7 @@ class HernquistPotential(AbstractSinglePotential):
             "m_tot": self.m_tot(t, ustrip=self.units["mass"]),
             "r_s": self.r_s(t, ustrip=self.units["length"]),
         }
-        return potential(params, r)
+        return potential(params, r)  # type: ignore[no-any-return]
 
     @ft.partial(jax.jit)
     def _density(self, xyz: gt.BBtQorVSz3, t: gt.BBtQorVSz0, /) -> gt.BtFloatSz0:
@@ -62,7 +62,7 @@ class HernquistPotential(AbstractSinglePotential):
             "m_tot": self.m_tot(t, ustrip=self.units["mass"]),
             "r_s": self.r_s(t, ustrip=self.units["length"]),
         }
-        return density(params, r)
+        return density(params, r)  # type: ignore[no-any-return]
 
 
 # ============================================
@@ -73,7 +73,7 @@ def density(p: gt.Params, r: gt.Sz0, /) -> gt.FloatSz0:
     r"""Density profile for the Kepler potential."""
     s = r / p["r_s"]
     rho0 = p["m_tot"] / (2 * jnp.pi * p["r_s"] ** 3)
-    return rho0 / (s * (1 + s) ** 3)
+    return rho0 / (s * (1 + s) ** 3)  # type: ignore[no-any-return]
 
 
 @ft.partial(jax.jit)
@@ -164,7 +164,7 @@ class TriaxialHernquistPotential(AbstractSinglePotential):
 
         u1 = self.units["dimensionless"]
         q1, q2 = self.q1(t, ustrip=u1), self.q2(t, ustrip=u1)
-        rprime = jnp.sqrt(
+        rprime = safe_sqrt(
             xyz[..., 0] ** 2 + (xyz[..., 1] / q1) ** 2 + (xyz[..., 2] / q2) ** 2
         )
 
@@ -173,4 +173,4 @@ class TriaxialHernquistPotential(AbstractSinglePotential):
             "m_tot": self.m_tot(t, ustrip=self.units["mass"]),
             "r_s": self.r_s(t, ustrip=self.units["length"]),
         }
-        return potential(params, rprime)
+        return potential(params, rprime)  # type: ignore[no-any-return]

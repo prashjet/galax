@@ -1,6 +1,6 @@
 """galax: Galactic Dynamix in Jax."""
 
-__all__: list[str] = []
+__all__: tuple[str, ...] = ()
 
 import functools as ft
 
@@ -14,11 +14,12 @@ import coordinax as cx
 import quaxed.numpy as jnp
 import unxt as u
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from . import api
 from .base import AbstractPotential
 from .utils import parse_to_xyz_t
-from galax.utils._shape import batched_shape, expand_arr_dims, expand_batch_dims
+from galax.coordinates._src.shape import batched_shape
+from galax.potential._src.shape import expand_arr_dims, expand_batch_dims
 
 # =============================================================================
 # Potential Energy
@@ -365,13 +366,15 @@ def tidal_tensor(
 
     """
     J = api.hessian(pot, *args, **kwargs)  # (*batch, 3, 3)
-    batch_shape, arr_shape = batched_shape(J, expect_ndim=2)  # (*batch), (3, 3)
+    batch_shape, arr_shape = batched_shape(  # type: ignore[call-overload]
+        J, expect_ndim=2
+    )  # (*batch), (3, 3)
     traced = (
-        expand_batch_dims(jnp.eye(3), ndim=len(batch_shape))
+        expand_batch_dims(jnp.eye(3), ndim=len(batch_shape))  # type: ignore[operator]
         * expand_arr_dims(jnp.trace(J, axis1=-2, axis2=-1), ndim=len(arr_shape))
         / 3
     )
-    return J - traced
+    return J - traced  # type: ignore[operator]
 
 
 # =============================================================================

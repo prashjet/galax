@@ -1,14 +1,17 @@
 """galax: Galactic Dynamix in Jax."""
 
-__all__: list[str] = []
+__all__: tuple[str, ...] = ()
 
 import functools as ft
 
-from typing import Any, TypeAlias
+from collections.abc import Callable
+from jaxtyping import Array, Bool, Shaped
+from typing import Any, TypeAlias, cast
 
 import equinox as eqx
 import jax
 import numpy as np
+import optype as op
 from jax.dtypes import canonicalize_dtype
 from plum import Dispatcher, convert
 
@@ -19,8 +22,8 @@ import quaxed.numpy as jnp
 import unxt as u
 from unxt.quantity import AllowValue, BareQuantity
 
-import galax._custom_types as gt
 import galax.coordinates as gc
+import galax.potential.custom_types as gt
 
 OptUSys: TypeAlias = u.AbstractUnitSystem | None
 
@@ -38,12 +41,125 @@ def parse_dtypes(dtype2: np.dtype, dtype1: Any, /) -> np.dtype | None:
 # ==============================================================================
 
 
+@ft.partial(jax.jit, inline=True)
+def safe_sqrt(q2: gt.BBtFloatSz0, /) -> gt.BBtFloatSz0:
+    """Square root that stays differentiable where its argument vanishes.
+
+    ``sqrt`` has an infinite derivative at 0, so a radius built as
+    ``sqrt(x**2 + y**2 + z**2)`` makes `jax.grad` and `jax.hessian` of every
+    potential defined in terms of it NaN at the origin. Offsetting by the
+    smallest normal float keeps the derivative finite. The offset is ~1e-308
+    (float64), so the value is unchanged for any physically meaningful
+    position.
+
+    The offset must be applied to the primal, not just the tangent: recovering
+    the correct Hessian of a cored profile at the origin needs ``Phi'(r) / r``
+    evaluated at a genuinely non-zero ``r``.
+
+    Examples
+    --------
+    >>> import quaxed.numpy as jnp
+    >>> from galax.potential._src.utils import safe_sqrt
+
+    The value matches `jnp.sqrt`:
+
+    >>> safe_sqrt(jnp.asarray(4.0))
+    Array(2., dtype=float64)
+
+    but the derivative at zero is finite rather than infinite:
+
+    >>> import jax
+    >>> jnp.isfinite(jax.grad(safe_sqrt)(jnp.asarray(0.0)))
+    Array(True, dtype=bool, weak_type=True)
+    >>> jax.grad(jnp.sqrt)(jnp.asarray(0.0))
+    Array(inf, dtype=float64...)
+
+    """
+    tiny = jnp.finfo(jnp.promote_types(q2.dtype, float)).tiny
+    return jnp.sqrt(q2 + tiny)  # type: ignore[no-any-return]
+
+
+@ft.partial(jax.jit, inline=True)
+def safe_vector_norm(x: gt.BBtSz3, /) -> gt.BBtFloatSz0:
+    """`jnp.linalg.vector_norm` over the last axis, differentiable at the origin.
+
+    Values match `jnp.linalg.vector_norm` to within a rounding ulp -- the
+    offset is a no-op at any meaningful magnitude, but XLA fuses
+    ``sum(square(x))`` differently from `vector_norm`'s scaled algorithm. The
+    derivative at the origin is finite rather than NaN. See `safe_sqrt`.
+
+    Unlike `vector_norm`, this overflows for ``|x| > ~1e154`` (float64), which
+    no physical position reaches.
+
+    Examples
+    --------
+    >>> import quaxed.numpy as jnp
+    >>> from galax.potential._src.utils import safe_vector_norm
+
+    >>> xyz = jnp.asarray([3.0, 4.0, 0.0])
+    >>> safe_vector_norm(xyz)
+    Array(5., dtype=float64)
+
+    At the origin the gradient is zero -- the value `jnp.linalg.vector_norm`
+    cannot give -- rather than NaN:
+
+    >>> import jax
+    >>> jax.grad(safe_vector_norm)(jnp.zeros(3))
+    Array([0., 0., 0.], dtype=float64)
+    >>> jax.grad(jnp.linalg.vector_norm)(jnp.zeros(3))
+    Array([nan, nan, nan], dtype=float64)
+
+    """
+    return safe_sqrt(jnp.sum(jnp.square(x), axis=-1))  # type: ignore[no-any-return]
+
+
 @ft.partial(jax.jit, inline=True, static_argnames=("unit",))
 def r_spherical(xyz: gt.BBtQorVSz3, unit: Any) -> gt.BBtFloatSz0:
-    """Spherical radius."""
+    """Spherical radius.
+
+    Uses `safe_vector_norm` so that the gradient and hessian of potentials
+    written in terms of ``r`` are finite at the origin rather than NaN.
+    """
     xyz = u.ustrip(AllowValue, unit, xyz)
-    r = jnp.linalg.vector_norm(xyz, axis=-1)
-    return r
+    r = safe_vector_norm(xyz)
+    return r  # type: ignore[no-any-return]
+
+
+# ==============================================================================
+
+
+class GaussLegendreIntegrator(eqx.Module):
+    """Gauss-Legendre quadrature integrator."""
+
+    x: Shaped[Array, "O"]
+    w: Shaped[Array, "O"]
+
+    @classmethod
+    def for_order(cls, order: int, /) -> "GaussLegendreIntegrator":
+        """Build the integrator for the interval [0, 1].
+
+        See :func:`numpy.polynomial.legendre.leggauss` for details on
+        ``order``.
+        """
+        x_, w_ = np.polynomial.legendre.leggauss(order)
+        x, w = jnp.asarray(x_, dtype=float), jnp.asarray(w_, dtype=float)
+        # Interval change from [-1, 1] to [0, 1]
+        x = 0.5 * (x + 1)
+        w = 0.5 * w
+        return cls(x, w)
+
+    @ft.partial(jax.jit, static_argnums=(1,))
+    def __call__(
+        self,
+        f: Callable[
+            [Shaped[Array, "N *#batch"]],
+            Shaped[Array, "N *batch"] | Shaped[u.Quantity["dimensionless"], "N *batch"],
+        ],
+        /,
+    ) -> Shaped[Array, "*batch"] | Shaped[u.Quantity["dimensionless"], "*batch"]:
+        y = f(self.x)
+        w = self.w.reshape(self.w.shape + (1,) * (y.ndim - 1))
+        return jnp.sum(y * w, axis=0)
 
 
 # ==============================================================================
@@ -502,3 +618,22 @@ def parse_to_xyz_t(
     return parse_to_xyz_t(
         None, wt.q, jnp.asarray(wt.t, dtype=dtype), dtype=dtype, ustrip=ustrip
     )
+
+
+# ============================================================================
+# Moved here from `galax.dynamics._src.utils`: `potential` is the lower
+# subpackage of the two that use it, so keeping it in `dynamics` meant
+# `potential` importing upward.
+
+
+def _identity[T](x: T) -> T:
+    return x
+
+
+def _reverse[T](x: op.CanGetitem[Any, T]) -> T:
+    return x[::-1]
+
+
+def cond_reverse[T](pred: Bool[Array, ""], x: T) -> T:
+    """Reverse `x` if `pred` is True."""
+    return cast("T", jax.lax.cond(pred, _reverse, _identity, x))

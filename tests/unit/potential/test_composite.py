@@ -3,8 +3,7 @@
 from dataclasses import replace
 
 from collections.abc import Mapping
-from typing import Any
-from typing_extensions import override
+from typing import Any, override
 
 import pytest
 
@@ -15,7 +14,7 @@ from zeroth import zeroth
 import galax.potential as gp
 from .test_base import AbstractPotential_Test
 from .test_utils import FieldUnitSystemMixin
-from galax._custom_types import Sz3
+from galax.potential.custom_types import Sz3
 
 
 # TODO: write the base-class test

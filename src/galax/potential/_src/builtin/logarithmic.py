@@ -18,7 +18,7 @@ import unxt as u
 from unxt.quantity import AllowValue
 from xmmutablemap import ImmutableMap
 
-import galax._custom_types as gt
+import galax.potential.custom_types as gt
 from galax.potential._src.base import default_constants
 from galax.potential._src.base_single import AbstractSinglePotential
 from galax.potential._src.params.base import AbstractParameter
@@ -50,7 +50,7 @@ class LogarithmicPotential(AbstractSinglePotential):
         r_s = self.r_s(t, ustrip=self.units["length"])
         v_c = self.v_c(t, ustrip=self.units["speed"])
 
-        return 0.5 * v_c**2 * jnp.log(r_s**2 + r**2)
+        return 0.5 * v_c**2 * jnp.log(r_s**2 + r**2)  # type: ignore[no-any-return]
 
 
 @final
@@ -105,4 +105,4 @@ class LMJ09LogarithmicPotential(AbstractSinglePotential):
         r2 = (x / q1) ** 2 + (y / q2) ** 2 + (xyz[..., 2] / q3) ** 2
 
         # Potential energy
-        return 0.5 * v_c**2 * jnp.log(r_s**2 + r2)
+        return 0.5 * v_c**2 * jnp.log(r_s**2 + r2)  # type: ignore[no-any-return]
